@@ -20,55 +20,64 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class NacosSynchronizer {
-    private static final Logger log = LoggerFactory.getLogger(NacosSynchronizer.class);
+	private static final Logger log = LoggerFactory.getLogger(NacosSynchronizer.class);
 
-    @Autowired
-    private NamingService namingService;
-    @Autowired
-    private NacosEventListener listener;
-    @Autowired
-    private PeerAwareInstanceRegistry peerAwareInstanceRegistry;
+	@Autowired
+	private NamingService namingService;
+	@Autowired
+	private NacosEventListener listener;
+	@Autowired
+	private PeerAwareInstanceRegistry peerAwareInstanceRegistry;
 
-    @PostConstruct
-    public void init() {
-        ScheduledExecutorService executor = new ScheduledThreadPoolExecutor(1, runnable -> {
-            Thread t = new Thread(runnable);
-            t.setName(NacosSynchronizer.class.getName());
-            t.setDaemon(true);
-            return t;
-        });
-        executor.scheduleWithFixedDelay(() -> {
-            try {
-                syncService();
-            } catch (Throwable e) {
-                log.error("synchronize service error", e);
-            }
-        }, 5, 10, TimeUnit.SECONDS);
-    }
+	@PostConstruct
+	public void init() {
+		ScheduledExecutorService executor =
+				new ScheduledThreadPoolExecutor(
+						1,
+						runnable -> {
+							Thread t = new Thread(runnable);
+							t.setName(NacosSynchronizer.class.getName());
+							t.setDaemon(true);
+							return t;
+						});
+		executor.scheduleWithFixedDelay(
+				() -> {
+					try {
+						syncService();
+					} catch (Throwable e) {
+						log.error("synchronize service error", e);
+					}
+				},
+				5,
+				10,
+				TimeUnit.SECONDS);
+	}
 
-    public void syncService() throws Exception {
-        ListView<String> serviceList = namingService.getServicesOfServer(1, 1000);
+	public void syncService() throws Exception {
+		ListView<String> serviceList = namingService.getServicesOfServer(1, 1000);
 
-        for (String service : serviceList.getData()) {
-            List<Instance> instances = namingService.getAllInstances(service);
-            for (Instance instance : instances) {
-                if (!isFromEureka(instance)) {
-                    String instanceId = String.format("%s:%s:%s", service, instance.getIp(), instance.getPort());
-                    peerAwareInstanceRegistry.renew(service.toUpperCase(), instanceId, false);
-                }
-            }
+		for (String service : serviceList.getData()) {
+			List<Instance> instances = namingService.getAllInstances(service);
+			for (Instance instance : instances) {
+				if (!isFromEureka(instance)) {
+					String instanceId =
+							String.format("%s:%s:%s", instance.getIp(), service, instance.getPort());
+					peerAwareInstanceRegistry.renew(service.toUpperCase(), instanceId, false);
+				}
+			}
 
-            List<ServiceInfo> list = namingService.getSubscribeServices();
-            Optional<ServiceInfo> optional = list.stream().filter(serviceInfo -> serviceInfo.getName().equals(service)).findFirst();
-            if (!optional.isPresent()) {
-                namingService.subscribe(service, listener);
-            }
-        }
+			List<ServiceInfo> list = namingService.getSubscribeServices();
+			Optional<ServiceInfo> optional =
+					list.stream().filter(serviceInfo -> serviceInfo.getName().equals(service)).findFirst();
+			if (!optional.isPresent()) {
+				namingService.subscribe(service, listener);
+			}
+		}
+	}
 
-    }
-
-    private boolean isFromEureka(Instance instance) {
-        String discoveryClient = instance.getMetadata().get(ProxyConstants.METADATA_DISCOVERY_CLIENT);
-        return !StringUtils.isEmpty(discoveryClient) && discoveryClient.equals(ProxyConstants.EUREKA_VALUE);
-    }
+	private boolean isFromEureka(Instance instance) {
+		String discoveryClient = instance.getMetadata().get(ProxyConstants.METADATA_DISCOVERY_CLIENT);
+		return !StringUtils.isEmpty(discoveryClient)
+				&& discoveryClient.equals(ProxyConstants.EUREKA_VALUE);
+	}
 }

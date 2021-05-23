@@ -18,14 +18,14 @@ import org.springframework.context.annotation.Configuration;
 @AutoConfigureBefore(ConfigServerAutoConfiguration.class)
 public class ConfigProxyAutoConfiguration {
 
-    @Bean
-    public ConfigService nacosConfigService(NacosConfigProperties nacosConfigProperties) throws NacosException {
-        return NacosFactory.createConfigService(nacosConfigProperties);
-    }
+	@Bean
+	public ConfigService nacosConfigService(NacosConfigProperties nacosConfigProperties) throws NacosException {
+		return NacosFactory.createConfigService(nacosConfigProperties);
+	}
 
-    @Bean
-    public EnvironmentRepository nacosEnvironmentRepository(ConfigService configService, NacosConfigProperties nacosConfigProperties) {
-        return new NacosEnvironmentRepository(configService, nacosConfigProperties);
-    }
+	@Bean
+	public EnvironmentRepository nacosEnvironmentRepository(ConfigService configService, NacosConfigProperties nacosConfigProperties) {
+		return new NacosEnvironmentRepository(configService, nacosConfigProperties);
+	}
 
 }

@@ -6,7 +6,8 @@
 
     <groupId>net.nacos</groupId>
     <artifactId>spring-cloud-nacos</artifactId>
-    <version>1.0.1</version>
+    <version>1.1.1</version>
+    <note></note>
     <packaging>pom</packaging>
 
     <name>Nacos Plus for Spring Cloud ${project.version}</name>
